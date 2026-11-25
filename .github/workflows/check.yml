@@ -1,0 +1,28 @@
+name: Check appointments
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - run: python main.py
+        env:
+          RUN_ONCE: "1"
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_IDS: ${{ secrets.TELEGRAM_CHAT_IDS }}
+          TARGET_DATE: ${{ vars.TARGET_DATE }}
+          START_URL: ${{ vars.START_URL }}
+          CNC_CODE: ${{ vars.CNC_CODE }}
+          LOCATION_CODE: ${{ vars.LOCATION_CODE }}
+          LOCATION_NUMBER: ${{ vars.LOCATION_NUMBER }}

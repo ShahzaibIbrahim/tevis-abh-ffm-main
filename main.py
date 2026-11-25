@@ -19,10 +19,10 @@ CHECK_DELAY: int = int(os.getenv('CHECK_DELAY', '30'))  # seconds
 
 # Initial URL to start the appointment search
 START_URL: str = os.getenv('START_URL', "https://tevis.ekom21.de/fra/select2?md=35") # Arbeitnehmer 35.3
-LOCATION_CODE: str = os.getenv('LOCATION_CODE', "315")  # Location code for Frankfurt am Main Ausländerbehörde
+LOCATION_CODE: str = os.getenv('LOCATION_CODE') or "315"  # Location code for Frankfurt am Main Ausländerbehörde
 CNC_CODE: str = os.getenv('CNC_CODE', "5792")  # Selection code for the specific appointment type
 NO_PERSONS: str = os.getenv('NO_PERSONS', "1")  # Number of persons for the appointment
-LOCATION_NUMBER: str = os.getenv('LOCATION_NUMBER')  # Order for location number in Standortauswahl. Leave none if any location desirable
+LOCATION_NUMBER: Optional[str] = os.getenv('LOCATION_NUMBER') or None  # Order for location number in Standortauswahl. Leave none if any location desirable
 
 # Global variable to track current popup
 current_popup: Optional['tk.Tk'] = None
@@ -38,6 +38,18 @@ logging.basicConfig(
     datefmt="%Y-%m-%d %H:%M:%S"
 )
 LOG: logging.Logger = logging.getLogger(__name__)
+
+
+async def run_once() -> None:
+    """Single check, used for scheduled runs (e.g. GitHub Actions)."""
+    next_termin: datetime = await get_next_termin_with_retry(max_retries=3)
+    if next_termin is not None and next_termin <= TARGET_DATE:
+        LOG.info(f"Found an appointment on or before the target date: {next_termin}")
+        if TELEGRAM_BOT_TOKEN:
+            await asyncio.gather(*(send_telegram_message(c.strip(), next_termin)
+                                   for c in TELEGRAM_CHAT_IDS if c.strip()))
+    else:
+        LOG.info(f"No suitable appointment found, next available is: {next_termin}")
 
 
 async def main() -> None:
@@ -289,6 +301,6 @@ if __name__ == "__main__":
     LOG.info("⏹️  Press Ctrl+C to stop\n")
 
     try:
-        asyncio.run(main())
+        asyncio.run(run_once() if os.getenv('RUN_ONCE') == '1' else main())
     except KeyboardInterrupt:
         LOG.info("👋 Goodbye!")
