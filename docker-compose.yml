@@ -1,0 +1,25 @@
+services:
+  pr-abh:
+    image: tevis-abh-ffm:latest
+    restart: unless-stopped
+    environment:
+      TARGET_DATE: "2026-04-21"
+      TELEGRAM_CHAT_IDS: "your_telegram_id_here"
+      CHECK_DELAY: "20"
+      START_URL: "https://tevis.ekom21.de/fra/select2?md=35"
+      CNC_CODE: "5792"
+    env_file:
+      - .env # specify TELEGRAM_BOT_TOKEN, easily share between instances
+
+  abholung-abh:
+    image: tevis-abh-ffm:latest
+    restart: unless-stopped
+    environment:
+      TARGET_DATE: "2026-04-21"
+      TELEGRAM_CHAT_IDS: "your_telegram_id_here"
+      CHECK_DELAY: "20"
+      START_URL: "https://tevis.ekom21.de/fra/select2?md=13"
+      CNC_CODE: "5762"
+      LOCATION_NUMBER: "2"
+    env_file:
+      - .env
